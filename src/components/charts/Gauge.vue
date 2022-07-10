@@ -89,20 +89,16 @@ export default Vue.extend({
           "#5cd65c",
           "#33cc69",
           "#33cc9e",
-          "#33ccc9",
-          "#33b3cc",
-          "#33a6cc",
-          "#3399cc",
-          "#338acc",
-          "#337dcc",
-          "#3375cc",
-          "#3366cc",
         ];
       },
     },
     colorEnd: {
       type: String,
       default: "#5cd65c",
+    },
+    colorReversed: {
+      type: Boolean,
+      default: false,
     },
     colorStart: {
       type: String,
@@ -195,6 +191,10 @@ export default Vue.extend({
     colorSet() {
       if (this.gradient) {
         return this.gradientColors;
+      }
+      if (this.colorReversed) {
+        // eslint-disable-next-line vue/no-side-effects-in-computed-properties
+        return this.colors.reverse();
       }
       return this.colors;
     },

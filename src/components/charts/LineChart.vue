@@ -1,25 +1,50 @@
 <template>
-  <svg class="chart" viewBox="0 0 370 350">
-    <g v-for="(line, i) in lines" :key="`line_${i}`">
-      <g>
-        <line :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" />
+  <div class="chart__wrapper">
+    <div class="chart__info__cash">
+      Cash: {{ wallet.cash.toFixed(1).toLocaleString() }}
+    </div>
+    <div class="chart__info__stocks">Stocks: {{ wallet.stocks }}</div>
+    <div class="chart__info__price">
+      Stock price: {{ currentStockPrice.toFixed(1) }}
+    </div>
+    <svg class="chart" viewBox="0 0 370 350">
+      <g v-for="(line, i) in lines" :key="`line_${i}`">
+        <g>
+          <line
+            :x1="line.x1"
+            :y1="line.y1 !== Infinity ? line.y1 : 0"
+            :x2="line.x2"
+            :y2="line.y2 !== Infinity ? line.y2 : 0"
+          />
+        </g>
+        <line
+          class="line-segment"
+          v-if="i % timeSegment === 1"
+          :x1="line.x1"
+          :y1="20"
+          :x2="line.x1"
+          :y2="350"
+        />
+        <circle
+          r="2"
+          :cx="lines[lines.length - 1].x2 ? lines[lines.length - 1].x2 : 0"
+          :cy="lines[lines.length - 1].y2 ? lines[lines.length - 1].y2 : 0"
+          fill="rgb(130,130,130)"
+        />
       </g>
-      <line
-        class="line-segment"
-        v-if="i % timeSegment === 1"
-        :x1="line.x1"
-        :y1="20"
-        :x2="line.x1"
-        :y2="350"
-      />
-      <circle
-        r="2"
-        :cx="lines[lines.length - 1]?.x2 || 0"
-        :cy="lines[lines.length - 1]?.y2 || 0"
-        fill="rgb(130,130,130)"
-      />
-    </g>
-  </svg>
+      <g v-for="(line, i) in averageLines" :key="`average_line_${i}`">
+        <g>
+          <line
+            class="chart__average-line"
+            :x1="line.x1"
+            :y1="line.y1 !== Infinity ? line.y1 : 0"
+            :x2="line.x2"
+            :y2="line.y2 !== Infinity ? line.y2 : 0"
+          />
+        </g>
+      </g>
+    </svg>
+  </div>
 </template>
 
 <script>
@@ -28,10 +53,29 @@ export default Vue.extend({
   name: "LineChart",
   components: {},
   props: {
+    average: {
+      type: Array,
+      default() {
+        return [];
+      },
+    },
+    currentStockPrice: {
+      type: Number,
+      default: 0,
+    },
     dataset: {
       type: Array,
       default() {
         return [];
+      },
+    },
+    wallet: {
+      type: Object,
+      default() {
+        return {
+          cash: 0,
+          stocks: 0,
+        };
       },
     },
   },
@@ -55,6 +99,20 @@ export default Vue.extend({
     max() {
       return Math.max(...this.dataset);
     },
+    averageLines() {
+      return this.averagePlots.map((plot, i) => {
+        return {
+          x1: plot.x || 0,
+          y1: plot.y || 0,
+          x2: this.averagePlots[i + 1]
+            ? this.averagePlots[i + 1].x
+            : plot.x || 0,
+          y2: this.averagePlots[i + 1]
+            ? this.averagePlots[i + 1].y
+            : plot.y || 0,
+        };
+      });
+    },
     lines() {
       return this.plots.map((plot, i) => {
         return {
@@ -62,6 +120,14 @@ export default Vue.extend({
           y1: plot.y || 0,
           x2: this.plots[i + 1] ? this.plots[i + 1].x : plot.x || 0,
           y2: this.plots[i + 1] ? this.plots[i + 1].y : plot.y || 0,
+        };
+      });
+    },
+    averagePlots() {
+      return this.average.map((val, i) => {
+        return {
+          x: i,
+          y: this.normalize(val),
         };
       });
     },
@@ -88,17 +154,45 @@ export default Vue.extend({
 </script>
 
 <style lang="scss" scoped>
-.chart-foster-parent {
-  display: flex;
-  padding-bottom: 10px;
-  position: relative;
-  width: 100%;
-}
-
 line {
   cursor: crosshair;
-  stroke-width: 1;
   stroke: rgb(87, 87, 87);
+}
+
+.chart {
+  &__average-line {
+    stroke: #ff9933;
+    stroke-width: 1;
+  }
+  &__info {
+    &__cash,
+    &__stocks {
+      font-size: 0.8rem;
+    }
+  }
+  &__info__cash {
+    position: absolute;
+    top: 18px;
+    left: 30px;
+    z-index: 1;
+  }
+  &__info__stocks {
+    position: absolute;
+    top: 32px;
+    left: 30px;
+    z-index: 1;
+  }
+  &__info__price {
+    position: absolute;
+    top: 18px;
+    right: 30px;
+    z-index: 1;
+    text-align: right;
+    font-size: 1.2rem;
+  }
+  &__wrapper {
+    position: relative;
+  }
 }
 
 .line-up,
@@ -156,12 +250,11 @@ line {
 svg.chart {
   background: radial-gradient(rgba(0, 0, 0, 0.226), rgba(0, 0, 0, 0.705));
   border-radius: 3px;
-  // border: 1px solid rgb(46, 46, 46);
-  // border: 1px solid rgba(33, 149, 243, 0.336);
   box-shadow: 0 20px 40px -20px black;
   margin: 10px;
-  padding: 20px;
+  padding: 20px 20px 20px 20px;
   width: 400px;
+  position: relative;
 }
 circle {
   transition: r 0.1s ease-in-out;
