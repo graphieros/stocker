@@ -1,11 +1,11 @@
 <template>
   <div class="chart__wrapper">
     <div class="chart__info__cash">
-      Cash: {{ wallet.cash.toFixed(1).toLocaleString() }}
+      Cash: {{ Math.round(wallet.cash).toLocaleString() }}
     </div>
     <div class="chart__info__stocks">Stocks: {{ wallet.stocks }}</div>
     <div class="chart__info__price">
-      Stock price: {{ currentStockPrice.toFixed(1) }}
+      Stock price: {{ Math.round(currentStockPrice).toLocaleString() }}
     </div>
     <svg class="chart" viewBox="0 0 370 350">
       <g v-for="(line, i) in lines" :key="`line_${i}`">

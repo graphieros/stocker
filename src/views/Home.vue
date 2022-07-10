@@ -1,7 +1,16 @@
 <template>
   <div :class="{ stocker: true, 'stocker--pause': playState === 1 }">
     <div class="stocker__actions__start">
-      <input type="range" min="10" max="1000" v-model="settings.speed" />
+      <label for="range" style="color: white"
+        >Speed: {{ settings.speed }}</label
+      >
+      <input
+        id="range"
+        type="range"
+        min="10"
+        max="1000"
+        v-model="settings.speed"
+      />
       <Clicker
         :disabled="playState === 1"
         @click="buy(settings.tradeAmount)"
@@ -87,6 +96,7 @@ export default {
         marketTrend: 1,
         speed: 100,
         stockAverageHistory: [],
+        stockAverageHistory2: [],
         stockHistory: [],
         stockIncr: 0,
         stockValue: 0,
@@ -219,8 +229,8 @@ export default {
       this.settings.stockHistory.push(this.settings.stockValue);
       this.settings.stockHistory = this.settings.stockHistory.slice(-365);
       const average =
-        this.settings.stockHistory.reduce((a, b) => a + b, 0) /
-        this.settings.stockAverageHistory.length;
+        [...this.settings.stockHistory].slice(-90).reduce((a, b) => a + b, 0) /
+        90;
       this.settings.stockAverageHistory.push(average);
       this.settings.stockAverageHistory =
         this.settings.stockAverageHistory.slice(-365);
