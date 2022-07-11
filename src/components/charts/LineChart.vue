@@ -1,20 +1,28 @@
 <template>
   <div class="chart__wrapper">
-    <div class="chart__info__cash">
+    <div v-if="showLegend" class="chart__info__cash">
       Cash: {{ Math.round(wallet.cash).toLocaleString() }}
     </div>
-    <div class="chart__info__stocks">Stocks: {{ wallet.stocks }}</div>
-    <div class="chart__info__price">
+    <div v-if="showLegend" class="chart__info__stocks">
+      Stocks: {{ wallet.stocks }}
+    </div>
+    <div v-if="showLegend" class="chart__info__price">
       Stock price: {{ Math.round(currentStockPrice).toLocaleString() }}
     </div>
-    <svg class="chart" viewBox="0 0 370 350">
+    <svg
+      class="chart"
+      viewBox="0 0 370 350"
+      :style="`height:${height}px; width:${width}px`"
+    >
       <g v-for="(line, i) in lines" :key="`line_${i}`">
-        <g>
+        <g v-if="!hideDataset">
           <line
+            class="direct"
             :x1="line.x1"
-            :y1="line.y1 !== Infinity ? line.y1 : 0"
+            :y1="line.y1 && line.y1 !== Infinity ? line.y1 : 0"
             :x2="line.x2"
-            :y2="line.y2 !== Infinity ? line.y2 : 0"
+            :y2="line.y2 && line.y2 !== Infinity ? line.y2 : 0"
+            :style="colorDataset ? `stroke:${colorDataset}` : ''"
           />
         </g>
         <line
@@ -26,20 +34,23 @@
           :y2="350"
         />
         <circle
+          v-if="!hideDataset"
           r="2"
           :cx="lines[lines.length - 1].x2 ? lines[lines.length - 1].x2 : 0"
           :cy="lines[lines.length - 1].y2 ? lines[lines.length - 1].y2 : 0"
-          fill="rgb(130,130,130)"
+          :fill="colorDataset ? colorDataset : 'rgb(130, 130, 130)'"
         />
       </g>
+      <line class="line-segment" :x1="0" :y1="350" :x2="360" :y2="350"></line>
+      <line class="line-segment" :x1="0" :y1="20" :x2="360" :y2="20"></line>
       <g v-for="(line, i) in averageLines" :key="`average_line_${i}`">
-        <g>
+        <g v-if="!hideAverage">
           <line
             class="chart__average-line"
             :x1="line.x1"
-            :y1="line.y1 !== Infinity ? line.y1 : 0"
+            :y1="line.y1 && line.y1 !== Infinity ? line.y1 : 0"
             :x2="line.x2"
-            :y2="line.y2 !== Infinity ? line.y2 : 0"
+            :y2="line.y2 && line.y2 !== Infinity ? line.y2 : 0"
           />
         </g>
       </g>
@@ -63,11 +74,31 @@ export default Vue.extend({
       type: Number,
       default: 0,
     },
+    colorDataset: {
+      type: String,
+      default: undefined,
+    },
     dataset: {
       type: Array,
       default() {
         return [];
       },
+    },
+    height: {
+      type: Number,
+      default: null,
+    },
+    hideDataset: {
+      type: Boolean,
+      default: false,
+    },
+    hideAverage: {
+      type: Boolean,
+      default: false,
+    },
+    showLegend: {
+      type: Boolean,
+      default: true,
     },
     wallet: {
       type: Object,
@@ -78,6 +109,10 @@ export default Vue.extend({
         };
       },
     },
+    width: {
+      type: Number,
+      default: null,
+    },
   },
   data() {
     return {
@@ -85,14 +120,6 @@ export default Vue.extend({
     };
   },
   computed: {
-    height() {
-      if (this.max < 0) {
-        return 400;
-      } else if (this.max > 400) {
-        return 400;
-      }
-      return this.max;
-    },
     min() {
       return Math.min(...this.dataset);
     },
@@ -195,6 +222,10 @@ line {
   }
 }
 
+.direct {
+  stroke: rgba(255, 255, 255, 0.445);
+}
+
 .line-up,
 .line-down,
 .line-neutral {
@@ -248,9 +279,9 @@ line {
   // stroke-dasharray: 2, 2;
 }
 svg.chart {
-  background: radial-gradient(rgba(0, 0, 0, 0.226), rgba(0, 0, 0, 0.705));
+  // background: linear-gradient(to top, rgba(255, 255, 255, 0.2), transparent);
   border-radius: 3px;
-  box-shadow: 0 20px 40px -20px black;
+  // box-shadow: 0 20px 40px -20px black;
   margin: 10px;
   padding: 20px 20px 20px 20px;
   width: 400px;
