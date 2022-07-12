@@ -7,7 +7,7 @@
       Stocks: {{ wallet.stocks }}
     </div>
     <div v-if="showLegend" class="chart__info__price">
-      Stock price: {{ Math.round(currentStockPrice).toLocaleString() }}
+      Stock price: {{ currentStockPrice.toFixed(1).toLocaleString() }}
     </div>
     <svg
       class="chart"

@@ -74,43 +74,117 @@
         </div>
       </div>
 
-      <div class="line-charts">
-        <div class="line-chart">
-          <LineChart
-            :dataset="settings.stockHistory"
-            :average="settings.stockAverageHistory"
-            :wallet="wallet"
-            :currentStockPrice="settings.stockValue"
-            hideAverage
-          />
-        </div>
-        <div class="line-chart">
-          <LineChart
-            :dataset="wallet.cashHistory"
-            :average="wallet.stocksHistory"
-            :showLegend="false"
-            colorDataset="#33cc9e"
-            hideAverage
-          ></LineChart>
+      <div class="control-center">
+        <div class="line-charts">
           <div class="line-chart">
             <LineChart
-              :dataset="settings.krachRiskHistory"
+              :dataset="settings.stockHistory"
+              :average="settings.stockAverageHistory"
+              :wallet="wallet"
+              :currentStockPrice="settings.stockValue"
+              hideAverage
+            />
+          </div>
+          <div class="line-chart">
+            <LineChart
+              :dataset="wallet.cashHistory"
               :average="wallet.stocksHistory"
               :showLegend="false"
-              colorDataset="#ff6600"
+              colorDataset="#33cc9e"
               hideAverage
             ></LineChart>
+            <div class="line-chart">
+              <LineChart
+                :dataset="settings.krachRiskHistory"
+                :average="wallet.stocksHistory"
+                :showLegend="false"
+                colorDataset="#ff6600"
+                hideAverage
+              ></LineChart>
+            </div>
+            <div class="simple-thermo">
+              <SimpleThermometer
+                :dataset="{
+                  done: currentTime,
+                  max: 365,
+                  ratio: (currentTime / 365) * 100,
+                }"
+                color="#3399cc"
+                :label="`day ${currentTime}`"
+                :gradient="false"
+              />
+            </div>
           </div>
-          <div class="simple-thermo">
-            <SimpleThermometer
-              :dataset="{
-                done: currentTime,
-                max: 365,
-                ratio: (currentTime / 365) * 100,
+        </div>
+        <div class="stock-log">
+          <div class="stock-log__header">
+            <span> d </span>
+            <span> d-30 </span>
+            <span> m </span>
+            <span> m-12 </span>
+          </div>
+          <div
+            class="stock-log__item"
+            v-for="(log, i) in stockLog"
+            :key="`log_${i}`"
+          >
+            <span
+              v-if="stockLog.length > 30"
+              :class="{
+                positive: log > stockLog[i + 30],
+                negative: log < stockLog[i + 30],
               }"
-              color="#3399cc"
-              :label="`day ${currentTime}`"
-            />
+            ></span>
+            <span
+              :style="
+                i + 1
+                  ? stockLog[i + 1] > log
+                    ? `color: #ff6600`
+                    : `color: #33cc9e`
+                  : 'color:grey'
+              "
+            >
+              {{ log.toFixed(1).toLocaleString() }}
+            </span>
+
+            <span
+              v-if="stockLog.length > 30"
+              style="margin-left: 12px; margin-right: 12px"
+            >
+              {{
+                stockLog[i + 30]
+                  ? stockLog[i + 30].toFixed(1).toLocaleString()
+                  : ""
+              }}
+            </span>
+
+            <span
+              v-if="settings.stockAverageMonthHistory.length > 30"
+              :style="
+                i + 12
+                  ? settings.stockAverageMonthHistory[i + 12] >
+                    settings.stockAverageMonthHistory[i]
+                    ? 'color: #ff6600'
+                    : 'color: #33cc9e'
+                  : 'color:grey'
+              "
+              >{{
+                settings.stockAverageMonthHistory[i].toFixed(1).toLocaleString()
+              }}</span
+            >
+
+            <span
+              v-if="settings.stockAverageMonthHistory.length > 30"
+              style="margin-left: 12px"
+            >
+              {{
+                settings.stockAverageMonthHistory[i + 12]
+                  ? settings.stockAverageMonthHistory[i + 12]
+                      .toFixed(1)
+                      .toLocaleString()
+                  : ""
+              }}
+            </span>
           </div>
         </div>
       </div>
@@ -154,6 +228,7 @@ export default {
         stockAverageHistory: [],
         stockAverageHistory2: [],
         stockHistory: [],
+        stockAverageMonthHistory: [],
         stockIncr: 0,
         stockValue: 0,
         tension: 0,
@@ -176,6 +251,11 @@ export default {
           this.gameLoop();
         }
       },
+    },
+  },
+  computed: {
+    stockLog() {
+      return [...(this.settings.stockHistory || [])].reverse();
     },
   },
   methods: {
@@ -297,6 +377,9 @@ export default {
         this.wallet.cash -= 0.000000000001;
       }
     },
+    rand(num) {
+      return Math.round(Math.random() * num);
+    },
     saveKrachRiskHistory() {
       this.settings.krachRiskHistory.push(this.settings.krachRisk);
       this.settings.krachRiskHistory =
@@ -349,6 +432,12 @@ export default {
       this.settings.stockAverageHistory.push(average);
       this.settings.stockAverageHistory =
         this.settings.stockAverageHistory.slice(-365);
+      const monthlyAverage =
+        [...this.settings.stockHistory].slice(-30).reduce((a, b) => a + b, 0) /
+        30;
+      this.settings.stockAverageMonthHistory.push(monthlyAverage);
+      this.settings.stockAverageMonthHistory =
+        this.settings.stockAverageMonthHistory.slice(-365).reverse();
     },
     updateStockValue(incr) {
       this.settings.stockValue +=
@@ -447,5 +536,47 @@ label {
   width: calc(100% - 65px);
   left: 50%;
   transform: translateX(-50%);
+}
+.control-center {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.stock-log {
+  width: 250px;
+  height: 360px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+  margin-left: 24px;
+  &__header {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+  }
+  &__item {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    width: 100%;
+    color: rgba(255, 255, 255, 0.521);
+  }
+}
+.positive,
+.negative {
+  display: block;
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  margin-right: 12px;
+}
+.positive {
+  background: #33cc9e;
+}
+.negative {
+  background: #ff6600;
 }
 </style>
